@@ -1,0 +1,44 @@
+x-constants:
+  backend_host: &backend_host localhost
+  backend_port: &backend_port 5000
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: geocontrol-db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: geocontrol_db
+      MYSQL_USER: geocontrol_user
+      MYSQL_PASSWORD: secret
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  backend:
+    build:
+      context: ../
+      dockerfile: docker/backend/Dockerfile
+    container_name: geocontrol-backend
+    environment:
+      DB_TYPE: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USERNAME: geocontrol_user
+      DB_PASSWORD: secret
+      DB_NAME: geocontrol_db
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+
+  frontend:
+    image: smpolito/geocontrolui:latest
+    container_name: geocontrol-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend/env-vars.json:/app/dist/config.json
+    depends_on:
+      - backend
